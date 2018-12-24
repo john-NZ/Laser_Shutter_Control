@@ -16,6 +16,13 @@ The stepper motor turns 90 degress to open then 90 degrees to close
 It uses four pins to control the servo a function called...  controls the servo
 */
 
+/*
+Shutter control V1.1 16/12/2018
+change the delay so every push is 30 seconds
+add piezo buzzer to indicate close shutter
+ */
+
+
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>          // LCD libray 
 #include <Stepper.h>                // Stepper libray
@@ -30,7 +37,7 @@ int  STEPS_PER_OUTPUT_REVOLUTION = (32 * 64) ; //2048
 
 
 int SetPointTime = 10;              // How long shutter is open in seconds
-int WaitTime = 10 ;                 // How long to wait in seconds
+int WaitTime = 30 ;                 // How long to wait in seconds
 
 int Steps2Take;                     // Varaiable controlling number of steps
                                     // this will be a fraction of 2048           
@@ -47,12 +54,17 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 // initialize a stepper object,  (can't use pins 8 and 9)
 Stepper small_stepper(STEPS_PER_MOTOR_REVOLUTION, 3, 12, 11, 13);  //3, 12 11, 13
 
+const int buzzer = 2;               // The pin the buzzer is connected to.
+
 void setup() {
   //setup serial
   Serial.begin(9600);     // Serial is only used during code de-bugging
   pinMode(0, INPUT);      // Pin Mode 0 is used for the buttons, all button inputs are detected on pin 0. Each button has a voltage range
   lcd.begin(16, 2);       // set up the LCD's number of columns and rows:
   ChangeMode(0);          // run the shutter mode function on start up and set it to manual mode to start with
+  
+  pinMode(2,OUTPUT);       // Buzzer pin set to output
+  
   }
 
 
@@ -69,10 +81,10 @@ void loop() {
      }
 Serial.print("waiting in main loop: mode is  "); Serial.println(mode); delay(500);  // some debugging
 }
-
+//end of loop
 
 int ButtonPress () {      // This just detects the button press and decides which button has been pressed
-delay(500);               // alow for depress
+delay(500);               // allow for depress of button
 // up button = 99;
 // down button = 254;
 // right button = 0;
@@ -86,6 +98,8 @@ delay(500);               // alow for depress
 
 
 // Manual Time open Counter in seconds
+//This is the easiest way to open the shutter, it just waits for open button the waits for close button
+
 int TimeOpen () {                               // When in manual mode and the up button is detected run this code untill the down button is detected
 Serial.println("manual shutter open");          // Some debugging
 int currentSeconds = millis()/1000;             // Set an inter to the current number of seconds since the code started
@@ -124,7 +138,7 @@ int ChangeMode(int Smode) {
       
  lcd.setCursor(0, 0);
  lcd.print(ShutterModeName);       
- lcd.print("   Wait 10 s");
+ lcd.print("   Wait 30 s");
  lcd.setCursor(0,1);
  lcd.print("Set 10 s  Closed ");
  lcd.setCursor(12,0);
@@ -143,8 +157,8 @@ lcd.blink();
 do {
 state = analogRead(0);
 delay(500);                                      // Wait for button to depress
-if (state == 99) { WaitTime = (WaitTime + 1) ;} 
-   else if (state >= 252 && state <= 255) { WaitTime = (WaitTime - 1) ;}
+if (state == 99) { WaitTime = (WaitTime + 30) ;} 
+   else if (state >= 252 && state <= 255) { WaitTime = (WaitTime - 30) ;}
 //Serial.println(WaitTime);
 lcd.print(WaitTime);
 lcd.setCursor(12,0);  
@@ -235,7 +249,17 @@ void closeShutter ()  {
   //Steps2Take  =  -STEPS_PER_OUTPUT_REVOLUTION / 2;  // Rotate CW 1/2 turn
   small_stepper.setSpeed(700);   
   small_stepper.step(-700);
-  delay(1000); 
+  delay(1000);
+  tone(buzzer,2000);
+  delay(1000);
+  noTone(buzzer);
+  delay(2000);
+  tone(buzzer,2000);
+  delay(1000);
+  noTone(buzzer);
+  delay(2000);
+  tone(buzzer,2000);
+  delay(1000);
+  noTone(buzzer); 
   
 }
-
